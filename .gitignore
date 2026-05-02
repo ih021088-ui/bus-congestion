@@ -35,3 +35,6 @@ frontend/out/
 .vscode/
 .idea/
 *.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
