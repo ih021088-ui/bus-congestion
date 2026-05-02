@@ -10,16 +10,15 @@ from data.collect.tago_client import snapshot as tago_snapshot
 from data.collect.weather_client import get_current_weather
 from data.collect.airkorea_client import get_air_quality
 from data.collect.holiday_client import is_holiday
-from data.collect.academic_calendar import get_semester_info
 from model.predict import predict_congestion
-
-# 수집할 정류장 목록 (stop_id, city_code, region, is_univ_area)
-WATCH_STOPS = [
-    {"stop_id": "GGB234000743", "city_code": 31, "region": "화성", "is_univ_area": True},  # 수원대
-]
 
 DB_PATH = "bus_congestion.db"
 POLL_INTERVAL = 300  # 5분
+
+# 수집할 정류장 목록 (stop_id, city_code, region)
+WATCH_STOPS = [
+    {"stop_id": "GGB234000743", "city_code": 31, "region": "화성"},  # 수원대학교
+]
 
 
 def init_db():
@@ -40,8 +39,6 @@ def init_db():
             day_of_week INTEGER,
             is_weekend INTEGER,
             is_holiday INTEGER,
-            is_semester INTEGER,
-            is_exam INTEGER,
             congestion_pred TEXT,
             congestion_actual TEXT
         )
@@ -62,11 +59,10 @@ def _collect_stop(stop: dict, now: datetime, today: date):
     tago = tago_snapshot(stop["stop_id"], stop["city_code"])
     weather = get_current_weather(stop["region"]) or {}
     air = get_air_quality(stop["region"]) or {}
-    sem = get_semester_info(today) if stop.get("is_univ_area") else {"is_semester": False, "is_exam": False}
 
     row = {
         "ts": now.isoformat(),
-        "stop_id": tago["stop_id"],
+        "stop_id": stop["stop_id"],
         "buses_arriving_20min": tago.get("buses_arriving_20min"),
         "avg_interval_min": tago.get("avg_interval_min"),
         "temp": weather.get("temp"),
@@ -78,25 +74,21 @@ def _collect_stop(stop: dict, now: datetime, today: date):
         "day_of_week": now.weekday(),
         "is_weekend": int(now.weekday() >= 5),
         "is_holiday": int(is_holiday(today)),
-        "is_semester": int(sem["is_semester"]),
-        "is_exam": int(sem["is_exam"]),
-        "congestion_pred": predict_congestion(row) if predict_congestion else None,
+        "congestion_pred": predict_congestion(row),
     }
 
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         INSERT INTO snapshots
         (ts, stop_id, buses_arriving_20min, avg_interval_min, temp, precipitation,
-         is_raining, pm10, pm25, hour, day_of_week, is_weekend, is_holiday,
-         is_semester, is_exam, congestion_pred)
+         is_raining, pm10, pm25, hour, day_of_week, is_weekend, is_holiday, congestion_pred)
         VALUES
         (:ts, :stop_id, :buses_arriving_20min, :avg_interval_min, :temp, :precipitation,
-         :is_raining, :pm10, :pm25, :hour, :day_of_week, :is_weekend, :is_holiday,
-         :is_semester, :is_exam, :congestion_pred)
+         :is_raining, :pm10, :pm25, :hour, :day_of_week, :is_weekend, :is_holiday, :congestion_pred)
     """, row)
     conn.commit()
     conn.close()
-    print(f"[{now.strftime('%H:%M')}] 수집 완료 → 예측: {row['congestion_pred']}")
+    print(f"[{now.strftime('%H:%M')}] {stop['stop_id']} 수집 완료 → 예측: {row['congestion_pred']}")
 
 
 if __name__ == "__main__":

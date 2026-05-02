@@ -1,7 +1,9 @@
 # 버스정류장 혼잡도 예측 서비스
 
-실시간 버스 데이터, 날씨, 학사일정을 활용해 전국 버스정류장의 혼잡도를 **혼잡 / 보통 / 여유** 3단계로 예측하는 서비스.
-정류장 이름으로 검색하면 어디든 혼잡도를 확인할 수 있으며, 발표 검증은 **수원대학교 7790 정류장**을 기준으로 진행한다.
+실시간 버스 데이터, 날씨, 공휴일 정보를 활용해 전국 버스정류장의 혼잡도를 **혼잡 / 보통 / 여유** 3단계로 예측하는 서비스.
+정류장 이름으로 검색하면 전국 어디서든 혼잡도를 확인할 수 있다.
+
+> **발표 검증**: 모델 학습 후 성능이 충분하면 수원대학교 7790 정류장에서 실사진과 예측값을 비교해 발표한다.
 
 ---
 
@@ -38,8 +40,23 @@
 | 날씨 (기온/강수) | 기상청 API허브 | 날씨 피처 |
 | 미세먼지 | 에어코리아 API | PM10, PM2.5 피처 |
 | 공휴일 | 한국천문연구원 API | 공휴일 여부 피처 |
-| 학사일정 | 수원대학교 홈페이지 | 대학 인근 정류장용 피처 |
 | 과거 승하차 데이터 | stcis.go.kr | 모델 학습용 |
+
+---
+
+## 모델 피처
+
+특정 지역에 종속되지 않는 **일반 피처**만 사용한다.
+
+| 피처 | 설명 |
+|------|------|
+| `hour`, `minute` | 시간대 |
+| `day_of_week`, `is_weekend` | 요일 |
+| `is_holiday` | 공휴일 여부 |
+| `temp`, `precipitation`, `is_raining` | 날씨 |
+| `pm10` | 미세먼지 |
+| `buses_arriving_20min` | 20분 내 도착 버스 수 |
+| `avg_interval_min` | 평균 배차 간격 |
 
 ---
 
@@ -66,7 +83,7 @@ bus-congestion/
 │   │   ├── weather_client.py     기상청 API (전국 격자 매핑)
 │   │   ├── airkorea_client.py    에어코리아 API (전국 측정소 매핑)
 │   │   ├── holiday_client.py     공휴일 API
-│   │   ├── academic_calendar.py  대학 인근 정류장용 학사일정
+│   │   ├── academic_calendar.py  학사일정 (검증용 참고 데이터)
 │   │   └── scheduler.py          5분 폴링 스케줄러
 │   ├── raw/                      원본 데이터 (gitignore)
 │   └── processed/                전처리 데이터 (gitignore)
@@ -125,7 +142,7 @@ cp .env.example .env
 pip install -r backend/requirements.txt
 uvicorn backend.main:app --reload
 # → http://localhost:8000
-# → http://localhost:8000/docs (Swagger UI)
+# → http://localhost:8000/docs  (Swagger UI에서 API 테스트 가능)
 ```
 
 ### 4. 프론트엔드 실행
@@ -163,14 +180,11 @@ python -m model.train --data data/processed/merged.csv
 
 ### 혼잡도 조회
 
-모든 엔드포인트는 아래 쿼리 파라미터를 받는다.
-
 | 파라미터 | 설명 | 예시 |
 |----------|------|------|
 | `stop_id` | TAGO 정류장 노드ID | `GGB234000743` |
-| `city_code` | TAGO 도시코드 | `31` (경기) |
-| `region` | 날씨/대기질 지역명 | `화성`, `서울` |
-| `is_univ_area` | 대학 인근 여부 (학사일정 피처 사용) | `true` / `false` |
+| `city_code` | TAGO 도시코드 | `31` (경기), `11` (서울) |
+| `region` | 날씨/대기질 지역명 | `화성`, `서울`, `강남` |
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
@@ -184,7 +198,7 @@ python -m model.train --data data/processed/merged.csv
 
 ```bash
 # 수원대학교 7790 정류장 현재 혼잡도
-GET /current?stop_id=GGB234000743&city_code=31&region=화성&is_univ_area=true
+GET /current?stop_id=GGB234000743&city_code=31&region=화성
 
 # 서울 강남역 정류장 혼잡도 (nodeId는 /stops/search로 확인)
 GET /current?stop_id=NODE_ID&city_code=11&region=강남
@@ -221,4 +235,4 @@ feat/* → 각자 작업 브랜치
 | 보통 | 7 ~ 14명 | 노랑 |
 | 여유 | 6명 이하 | 초록 |
 
-> 수원대 7790 정류장 실측 결과를 바탕으로 임계값 최종 조정 예정
+> 임계값은 학습 데이터 분포에 따라 조정 예정

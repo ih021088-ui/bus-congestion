@@ -12,7 +12,7 @@
 | **정인** | 데이터 수집 파이프라인 | `feat/data-pipeline` | `data/collect/` 전체 |
 | **승민** | FastAPI 백엔드 | `feat/backend-api` | `backend/` 전체 |
 | **승주** | Next.js 프론트엔드 | `feat/frontend-map` | `frontend/` 전체 |
-| **성빈** | 검증 + 발표자료 | `feat/validation` | `docs/validation/` |
+| **성빈** | 발표자료 + 수원대 검증 (선택) | `feat/validation` | `docs/validation/` |
 
 **PR 머지는 조장만 한다.** 본인 PR 본인 머지 금지.
 

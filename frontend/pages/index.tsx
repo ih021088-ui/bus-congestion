@@ -11,20 +11,34 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 const CITIES = ["서울", "경기", "부산", "대구", "인천", "광주", "대전", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
 
-// 검증용 기본 정류장 (수원대 7790)
-const DEFAULT_STOP = { stop_id: "GGB234000743", city_code: 31, region: "화성", stop_name: "수원대학교", lat: 37.2378, lng: 126.9301, is_univ_area: true }
+const CITY_CODE_MAP: Record<string, number> = {
+  서울: 11, 부산: 21, 대구: 22, 인천: 12, 광주: 24,
+  대전: 25, 울산: 26, 경기: 31, 강원: 32, 충북: 33,
+  충남: 34, 전북: 35, 전남: 36, 경북: 37, 경남: 38, 제주: 39,
+}
 
 interface StopSearch { node_id: string; name: string; no: string }
+interface SelectedStop { stop_id: string; city_code: number; region: string; stop_name: string; lat: number; lng: number }
+
+// 기본값: 수원대학교 7790 (검증용)
+const DEFAULT_STOP: SelectedStop = {
+  stop_id: "GGB234000743",
+  city_code: 31,
+  region: "화성",
+  stop_name: "수원대학교",
+  lat: 37.2378,
+  lng: 126.9301,
+}
 
 export default function Home() {
   const [city, setCity] = useState("경기")
   const [searchName, setSearchName] = useState("")
-  const [selected, setSelected] = useState(DEFAULT_STOP)
+  const [selected, setSelected] = useState<SelectedStop>(DEFAULT_STOP)
   const [searching, setSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<StopSearch[]>([])
 
-  const currentUrl = `${API}/current?stop_id=${selected.stop_id}&city_code=${selected.city_code}&region=${selected.region}&is_univ_area=${selected.is_univ_area}`
-  const predictUrl = `${API}/predict?stop_id=${selected.stop_id}&city_code=${selected.city_code}&region=${selected.region}&is_univ_area=${selected.is_univ_area}`
+  const currentUrl = `${API}/current?stop_id=${selected.stop_id}&city_code=${selected.city_code}&region=${selected.region}`
+  const predictUrl = `${API}/predict?stop_id=${selected.stop_id}&city_code=${selected.city_code}&region=${selected.region}`
 
   const { data: current, error } = useSWR(currentUrl, fetcher, { refreshInterval: 60000 })
   const { data: prediction } = useSWR(predictUrl, fetcher, { refreshInterval: 60000 })
@@ -47,9 +61,8 @@ export default function Home() {
       city_code: CITY_CODE_MAP[city] ?? 11,
       region: city,
       stop_name: stop.name,
-      lat: 37.5665,   // 검색 결과에 좌표가 없으므로 임시 서울 좌표
+      lat: 37.5665,
       lng: 126.9780,
-      is_univ_area: false,
     })
     setSearchResults([])
     setSearchName("")
@@ -63,7 +76,6 @@ export default function Home() {
           <p className="text-sm text-gray-500">정류장을 검색해서 혼잡도를 확인하세요</p>
         </header>
 
-        {/* 정류장 검색 */}
         <div className="bg-white rounded-2xl shadow-md p-4 space-y-3">
           <div className="flex gap-2">
             <select
@@ -127,10 +139,4 @@ export default function Home() {
       </div>
     </main>
   )
-}
-
-const CITY_CODE_MAP: Record<string, number> = {
-  서울: 11, 부산: 21, 대구: 22, 인천: 12, 광주: 24,
-  대전: 25, 울산: 26, 경기: 31, 강원: 32, 충북: 33,
-  충남: 34, 전북: 35, 전남: 36, 경북: 37, 경남: 38, 제주: 39,
 }

@@ -10,8 +10,6 @@ interface StopData {
   temp: number | null
   is_raining: boolean
   pm10: number | null
-  is_semester: boolean
-  is_exam: boolean
   region?: string
 }
 
@@ -36,7 +34,6 @@ export default function StopCard({ data }: { data: StopData }) {
         <InfoItem label="현재 기온" value={data.temp != null ? `${data.temp}°C` : "-"} />
         <InfoItem label="날씨" value={data.is_raining ? "비 내림 🌧" : "맑음 ☀️"} />
         <InfoItem label="미세먼지(PM10)" value={data.pm10 != null ? `${data.pm10} μg/m³` : "-"} />
-        <InfoItem label="학사 상태" value={data.is_exam ? "시험 기간" : data.is_semester ? "학기 중" : "-"} />
       </div>
 
       <p className="text-xs text-gray-300 mt-4 text-right">
