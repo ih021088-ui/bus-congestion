@@ -9,7 +9,7 @@ const BusStopMap = dynamic(() => import("../components/BusStopMap"), { ssr: fals
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-const CITIES = ["서울", "경기", "부산", "대구", "인천", "광주", "대전", "울산", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+const CITIES = ["서울", "경기", "인천"]
 
 const CITY_CODE_MAP: Record<string, number> = {
   서울: 11, 부산: 21, 대구: 22, 인천: 12, 광주: 24,
