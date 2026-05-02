@@ -1,0 +1,37 @@
+# 환경변수
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# 데이터 (용량 큼 - 직접 공유)
+data/raw/
+data/processed/
+*.csv
+*.parquet
+
+# 모델 저장 파일
+model/saved/*.pkl
+model/saved/*.joblib
+model/saved/*.txt
+
+# DB
+*.db
+*.sqlite3
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
+# IDE
+.vscode/
+.idea/
+*.DS_Store
