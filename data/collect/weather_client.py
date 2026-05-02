@@ -1,32 +1,57 @@
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 BASE_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService"
 API_KEY = os.getenv("KMA_API_KEY")
 
-# 수원대(화성시 봉담읍) 기상청 격자 좌표
-# https://www.kma.go.kr/HELP/contentview.do?CONTENT_ID=45352002 에서 확인
-NX, NY = 57, 119
+# 주요 지역 기상청 격자 좌표 (nx, ny)
+# https://www.kma.go.kr 격자 변환 도구 참고
+REGION_GRID: dict[str, tuple[int, int]] = {
+    "서울":     (60, 127),
+    "강남":     (61, 126),
+    "강북":     (61, 128),
+    "인천":     (55, 124),
+    "수원":     (60, 121),
+    "화성":     (57, 119),   # 수원대학교(봉담읍)
+    "성남":     (63, 124),
+    "용인":     (64, 119),
+    "안양":     (59, 123),
+    "부천":     (56, 125),
+    "고양":     (57, 128),
+    "의정부":   (61, 130),
+    "부산":     (98, 76),
+    "대구":     (89, 90),
+    "광주":     (58, 74),
+    "대전":     (67, 100),
+    "울산":     (102, 84),
+}
+
+DEFAULT_GRID = (60, 127)  # 서울 기본값
+
+
+def get_grid(region: str) -> tuple[int, int]:
+    for key, grid in REGION_GRID.items():
+        if key in region:
+            return grid
+    return DEFAULT_GRID
 
 
 def _base_date_time() -> tuple[str, str]:
     now = datetime.now()
     hour = now.hour
-    minute = now.minute
-    # 단기예보 발표 시각: 0200, 0500, 0800, 1100, 1400, 1700, 2000, 2300
     issue_hours = [2, 5, 8, 11, 14, 17, 20, 23]
     base_hour = max((h for h in issue_hours if h <= hour), default=23)
     if hour < 2:
-        from datetime import timedelta
         base_date = (now - timedelta(days=1)).strftime("%Y%m%d")
         return base_date, "2300"
     return now.strftime("%Y%m%d"), f"{base_hour:02d}00"
 
 
-def get_forecast() -> Optional[dict]:
+def get_forecast(region: str = "서울") -> Optional[dict]:
     """단기예보 - 향후 기온/강수/하늘상태"""
+    nx, ny = get_grid(region)
     base_date, base_time = _base_date_time()
     try:
         res = requests.get(
@@ -38,8 +63,8 @@ def get_forecast() -> Optional[dict]:
                 "dataType": "JSON",
                 "base_date": base_date,
                 "base_time": base_time,
-                "nx": NX,
-                "ny": NY,
+                "nx": nx,
+                "ny": ny,
             },
             timeout=10,
         )
@@ -51,8 +76,9 @@ def get_forecast() -> Optional[dict]:
         return None
 
 
-def get_current_weather() -> Optional[dict]:
+def get_current_weather(region: str = "서울") -> Optional[dict]:
     """초단기실황 - 현재 기온/강수"""
+    nx, ny = get_grid(region)
     now = datetime.now()
     try:
         res = requests.get(
@@ -64,8 +90,8 @@ def get_current_weather() -> Optional[dict]:
                 "dataType": "JSON",
                 "base_date": now.strftime("%Y%m%d"),
                 "base_time": f"{now.hour:02d}00",
-                "nx": NX,
-                "ny": NY,
+                "nx": nx,
+                "ny": ny,
             },
             timeout=10,
         )
@@ -89,11 +115,9 @@ def _parse_current(items: list) -> dict:
 
 
 def _parse_forecast(items: list) -> dict:
-    """향후 3시간 예보만 추출"""
     now = datetime.now()
     target_hour = (now.hour + 1) % 24
     target_time = f"{target_hour:02d}00"
-
     data = {
         i["category"]: i["fcstValue"]
         for i in items
