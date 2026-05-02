@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from datetime import datetime, date
 
 from data.collect.tago_client import snapshot as tago_snapshot
-from data.collect.weather_client import get_current_weather, get_forecast
+from data.collect.weather_client import get_current_weather
 from data.collect.airkorea_client import get_air_quality
 from data.collect.holiday_client import is_holiday
 from data.collect.academic_calendar import get_semester_info
@@ -12,19 +12,24 @@ router = APIRouter()
 
 
 @router.get("/predict")
-def get_prediction(horizon: int = 30):
-    """현재 + 향후 혼잡도 예측 (horizon: 30 또는 60분)"""
+def get_prediction(
+    stop_id: str = Query(..., description="TAGO 정류장 노드ID"),
+    city_code: int = Query(..., description="TAGO 도시코드"),
+    region: str = Query("서울", description="날씨/대기질 조회 지역명"),
+    is_univ_area: bool = Query(False, description="대학교 인근 정류장 여부"),
+):
+    """현재 + 향후 30/60분 후 혼잡도 예측"""
     now = datetime.now()
     today = date.today()
 
-    tago = tago_snapshot()
-    weather = get_current_weather() or {}
-    air = get_air_quality() or {}
-    sem = get_semester_info(today)
+    tago = tago_snapshot(stop_id, city_code)
+    weather = get_current_weather(region) or {}
+    air = get_air_quality(region) or {}
+
+    sem = get_semester_info(today) if is_univ_area else {"is_semester": False, "is_exam": False}
 
     base_row = {
         "ts": now.isoformat(),
-        "stop_id": tago["stop_id"],
         **tago,
         **weather,
         **air,
@@ -37,7 +42,7 @@ def get_prediction(horizon: int = 30):
     forecast = predict_future(base_row, horizon_minutes=[30, 60])
 
     return {
-        "stop_id": tago["stop_id"],
+        "stop_id": stop_id,
         "current": {**current, "ts": now.isoformat()},
         "forecast": forecast,
     }

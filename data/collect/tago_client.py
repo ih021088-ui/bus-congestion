@@ -6,11 +6,6 @@ from typing import Optional
 BASE_URL = "http://apis.data.go.kr/1613000"
 API_KEY = os.getenv("DATA_GO_KR_KEY")
 
-# 수원대 7790 정류장 TAGO 노드 ID
-# 최초 1회: get_stop_node_id("수원대학교") 로 확인 후 여기에 기입
-SUWON_UNIV_NODE_ID = "GGB234000743"  # 확인 필요 - 실제 노드ID로 교체
-CITY_CODE = 31  # 경기도
-
 
 def _get(service: str, operation: str, params: dict) -> Optional[dict]:
     url = f"{BASE_URL}/{service}/{operation}"
@@ -30,12 +25,12 @@ def _get(service: str, operation: str, params: dict) -> Optional[dict]:
         return None
 
 
-def get_stop_node_id(stop_name: str) -> list[dict]:
-    """정류장 이름으로 TAGO 노드ID 조회 - 최초 1회만 사용"""
+def search_stops(stop_name: str, city_code: int) -> list[dict]:
+    """정류장 이름으로 검색 - nodeId 확인용"""
     body = _get(
         "BusSttnInfoInqireService",
         "getSttnNoList",
-        {"cityCode": CITY_CODE, "nodeNm": stop_name},
+        {"cityCode": city_code, "nodeNm": stop_name},
     )
     if not body:
         return []
@@ -43,12 +38,12 @@ def get_stop_node_id(stop_name: str) -> list[dict]:
     return items if isinstance(items, list) else [items]
 
 
-def get_arrivals(node_id: str = SUWON_UNIV_NODE_ID) -> list[dict]:
+def get_arrivals(node_id: str, city_code: int) -> list[dict]:
     """정류장 실시간 도착 예정 버스 목록"""
     body = _get(
         "ArvlInfoInqireService",
         "getSttnAcctoArvlPrearngeInfoList",
-        {"cityCode": CITY_CODE, "nodeId": node_id},
+        {"cityCode": city_code, "nodeId": node_id},
     )
     if not body:
         return []
@@ -56,12 +51,12 @@ def get_arrivals(node_id: str = SUWON_UNIV_NODE_ID) -> list[dict]:
     return items if isinstance(items, list) else [items]
 
 
-def get_bus_location(route_id: str) -> list[dict]:
+def get_bus_location(route_id: str, city_code: int) -> list[dict]:
     """노선 실시간 버스 위치"""
     body = _get(
         "BusLcInfoInqireService",
         "getRouteAcctoBusLcList",
-        {"cityCode": CITY_CODE, "routeId": route_id},
+        {"cityCode": city_code, "routeId": route_id},
     )
     if not body:
         return []
@@ -69,12 +64,12 @@ def get_bus_location(route_id: str) -> list[dict]:
     return items if isinstance(items, list) else [items]
 
 
-def get_routes_at_stop(node_id: str = SUWON_UNIV_NODE_ID) -> list[dict]:
+def get_routes_at_stop(node_id: str, city_code: int) -> list[dict]:
     """정류장에 서는 노선 목록"""
     body = _get(
         "BusRouteInfoInqireService",
         "getSttnAcctoRouteList",
-        {"cityCode": CITY_CODE, "nodeId": node_id},
+        {"cityCode": city_code, "nodeId": node_id},
     )
     if not body:
         return []
@@ -82,9 +77,9 @@ def get_routes_at_stop(node_id: str = SUWON_UNIV_NODE_ID) -> list[dict]:
     return items if isinstance(items, list) else [items]
 
 
-def snapshot(node_id: str = SUWON_UNIV_NODE_ID) -> dict:
+def snapshot(node_id: str, city_code: int) -> dict:
     """폴링 1회 - 현재 상태 요약"""
-    arrivals = get_arrivals(node_id)
+    arrivals = get_arrivals(node_id, city_code)
     now = datetime.now()
 
     buses_in_20min = sum(
@@ -99,6 +94,7 @@ def snapshot(node_id: str = SUWON_UNIV_NODE_ID) -> dict:
     return {
         "ts": now.isoformat(),
         "stop_id": node_id,
+        "city_code": city_code,
         "buses_arriving_20min": buses_in_20min,
         "avg_interval_min": round(avg_interval, 1) if avg_interval else None,
         "raw_arrivals": arrivals,

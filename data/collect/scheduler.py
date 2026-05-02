@@ -13,6 +13,11 @@ from data.collect.holiday_client import is_holiday
 from data.collect.academic_calendar import get_semester_info
 from model.predict import predict_congestion
 
+# 수집할 정류장 목록 (stop_id, city_code, region, is_univ_area)
+WATCH_STOPS = [
+    {"stop_id": "GGB234000743", "city_code": 31, "region": "화성", "is_univ_area": True},  # 수원대
+]
+
 DB_PATH = "bus_congestion.db"
 POLL_INTERVAL = 300  # 5분
 
@@ -49,10 +54,15 @@ def collect_and_save():
     now = datetime.now()
     today = date.today()
 
-    tago = tago_snapshot()
-    weather = get_current_weather() or {}
-    air = get_air_quality() or {}
-    sem = get_semester_info(today)
+    for stop in WATCH_STOPS:
+        _collect_stop(stop, now, today)
+
+
+def _collect_stop(stop: dict, now: datetime, today: date):
+    tago = tago_snapshot(stop["stop_id"], stop["city_code"])
+    weather = get_current_weather(stop["region"]) or {}
+    air = get_air_quality(stop["region"]) or {}
+    sem = get_semester_info(today) if stop.get("is_univ_area") else {"is_semester": False, "is_exam": False}
 
     row = {
         "ts": now.isoformat(),

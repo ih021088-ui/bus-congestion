@@ -1,9 +1,11 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import L from "leaflet"
 
-// 수원대학교 7790 정류장 좌표
-const STOP_LAT = 37.2378
-const STOP_LNG = 126.9301
+interface Props {
+  lat: number
+  lng: number
+  stopName: string
+}
 
 const stopIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
@@ -13,16 +15,16 @@ const stopIcon = new L.Icon({
   popupAnchor: [1, -34],
 })
 
-export default function BusStopMap() {
+export default function BusStopMap({ lat, lng, stopName }: Props) {
   return (
     <div className="rounded-2xl overflow-hidden shadow-md h-64 w-full">
-      <MapContainer center={[STOP_LAT, STOP_LNG]} zoom={16} style={{ height: "100%", width: "100%" }}>
+      <MapContainer center={[lat, lng]} zoom={16} style={{ height: "100%", width: "100%" }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={[STOP_LAT, STOP_LNG]} icon={stopIcon}>
-          <Popup>수원대학교 버스정류장 (7790)</Popup>
+        <Marker position={[lat, lng]} icon={stopIcon}>
+          <Popup>{stopName}</Popup>
         </Marker>
       </MapContainer>
     </div>
