@@ -81,8 +81,8 @@ def _collect_stop(stop: dict, now: datetime, today: date):
         "day_of_week": now.weekday(),
         "is_weekend": int(now.weekday() >= 5),
         "is_holiday": int(is_holiday(today)),
-        "congestion_pred": predict_congestion(row),
     }
+    row["congestion_pred"] = predict_congestion(row)
 
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""

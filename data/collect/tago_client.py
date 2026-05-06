@@ -25,6 +25,15 @@ def _get(service: str, operation: str, params: dict) -> Optional[dict]:
         return None
 
 
+def _parse_items(body: dict) -> list[dict]:
+    # 데이터 없을 때 API가 items를 ""(빈 문자열)로 반환하는 케이스 처리
+    raw = body.get("items") or {}
+    if not isinstance(raw, dict):
+        return []
+    items = raw.get("item", [])
+    return items if isinstance(items, list) else [items]
+
+
 def search_stops(stop_name: str, city_code: int) -> list[dict]:
     """정류장 이름으로 검색 - nodeId 확인용"""
     body = _get(
@@ -34,8 +43,7 @@ def search_stops(stop_name: str, city_code: int) -> list[dict]:
     )
     if not body:
         return []
-    items = body.get("items", {}).get("item", [])
-    return items if isinstance(items, list) else [items]
+    return _parse_items(body)
 
 
 def get_arrivals(node_id: str, city_code: int) -> list[dict]:
@@ -47,8 +55,7 @@ def get_arrivals(node_id: str, city_code: int) -> list[dict]:
     )
     if not body:
         return []
-    items = body.get("items", {}).get("item", [])
-    return items if isinstance(items, list) else [items]
+    return _parse_items(body)
 
 
 def get_bus_location(route_id: str, city_code: int) -> list[dict]:
@@ -60,8 +67,7 @@ def get_bus_location(route_id: str, city_code: int) -> list[dict]:
     )
     if not body:
         return []
-    items = body.get("items", {}).get("item", [])
-    return items if isinstance(items, list) else [items]
+    return _parse_items(body)
 
 
 def get_routes_at_stop(node_id: str, city_code: int) -> list[dict]:
@@ -73,8 +79,7 @@ def get_routes_at_stop(node_id: str, city_code: int) -> list[dict]:
     )
     if not body:
         return []
-    items = body.get("items", {}).get("item", [])
-    return items if isinstance(items, list) else [items]
+    return _parse_items(body)
 
 
 def snapshot(node_id: str, city_code: int) -> dict:
