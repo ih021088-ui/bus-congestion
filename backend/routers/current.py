@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query
 from datetime import datetime, date
 
 from data.collect.tago_client import snapshot as tago_snapshot
+from data.collect.seoul_client import snapshot as seoul_snapshot
 from data.collect.weather_client import get_current_weather
 from data.collect.airkorea_client import get_air_quality
 from data.collect.holiday_client import is_holiday
@@ -19,13 +20,16 @@ def get_current(
     now = datetime.now()
     today = date.today()
 
-    tago = tago_snapshot(stop_id, city_code)
+    if city_code == 11:
+        bus_data = seoul_snapshot(stop_id, region)
+    else:
+        bus_data = tago_snapshot(stop_id, city_code)
     weather = get_current_weather(region) or {}
     air = get_air_quality(region) or {}
 
     row = {
         "ts": now.isoformat(),
-        **tago,
+        **bus_data,
         **weather,
         **air,
         "is_holiday": int(is_holiday(today)),
@@ -38,8 +42,8 @@ def get_current(
         "ts": now.isoformat(),
         "label": result["label"],
         "proba": result.get("proba", {}),
-        "buses_arriving_20min": tago.get("buses_arriving_20min"),
-        "avg_interval_min": tago.get("avg_interval_min"),
+        "buses_arriving_20min": bus_data.get("buses_arriving_20min"),
+        "avg_interval_min": bus_data.get("avg_interval_min"),
         "temp": weather.get("temp"),
         "is_raining": bool(weather.get("is_raining", False)),
         "pm10": air.get("pm10"),
