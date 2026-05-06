@@ -7,6 +7,7 @@ import time
 from datetime import datetime, date
 
 from data.collect.tago_client import snapshot as tago_snapshot
+from data.collect.seoul_client import snapshot as seoul_snapshot
 from data.collect.weather_client import get_current_weather
 from data.collect.airkorea_client import get_air_quality
 from data.collect.holiday_client import is_holiday
@@ -16,8 +17,11 @@ DB_PATH = "bus_congestion.db"
 POLL_INTERVAL = 300  # 5분
 
 # 수집할 정류장 목록 (stop_id, city_code, region)
+# 서울은 arsId 사용 (seoul_client), 나머지는 nodeId 사용 (tago_client)
 WATCH_STOPS = [
-    {"stop_id": "GGB234000743", "city_code": 31, "region": "화성"},  # 수원대학교
+    {"stop_id": "GGB234000743", "city_code": 31, "region": "화성"},  # 수원대학교 (경기)
+    {"stop_id": "ICB163000215", "city_code": 23, "region": "인천"},  # 인천터미널 (인천)
+    {"stop_id": "23813",        "city_code": 11, "region": "서울"},  # 강남역 (서울)
 ]
 
 
@@ -56,7 +60,10 @@ def collect_and_save():
 
 
 def _collect_stop(stop: dict, now: datetime, today: date):
-    tago = tago_snapshot(stop["stop_id"], stop["city_code"])
+    if stop["city_code"] == 11:
+        tago = seoul_snapshot(stop["stop_id"], stop["region"])
+    else:
+        tago = tago_snapshot(stop["stop_id"], stop["city_code"])
     weather = get_current_weather(stop["region"]) or {}
     air = get_air_quality(stop["region"]) or {}
 
