@@ -48,7 +48,7 @@ def get_air_quality(region: str = "서울") -> Optional[dict]:
                 "stationName": station,
                 "dataTerm": "DAILY",
                 "ver": "1.3",
-                "_returnType": "json",
+                "returnType": "json",
             },
             timeout=10,
         )

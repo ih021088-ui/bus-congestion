@@ -3,7 +3,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Optional
 
-BASE_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService"
+BASE_URL = "https://apihub.kma.go.kr/api/typ02/openApi/VilageFcstInfoService_2.0"
 API_KEY = os.getenv("KMA_API_KEY")
 
 # 주요 지역 기상청 격자 좌표 (nx, ny)
