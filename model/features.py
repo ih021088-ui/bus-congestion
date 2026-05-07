@@ -12,7 +12,8 @@ FEATURE_COLS = [
 LABEL_MAP = {"여유": 0, "보통": 1, "혼잡": 2}
 LABEL_INV = {v: k for k, v in LABEL_MAP.items()}
 
-THRESHOLDS = {"혼잡": 15, "보통": 7}
+# 재차인원 기준 (버스 정원 70명)
+THRESHOLDS = {"혼잡": 50, "보통": 20}
 
 
 def passenger_count_to_label(count: int) -> str:
